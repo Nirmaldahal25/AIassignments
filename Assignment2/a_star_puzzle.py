@@ -1,20 +1,39 @@
 # The implementation of 8 puzzle game by A star algorithm.
 import heapq as hq
+import graphviz
 
 # debug_count = 0
 class StateMatrix:
-    def __init__(self, state: list[list[int]], empty_cell: tuple = (0, 0), fun_value=float("inf"), g_value=0, parent=None, repeated=False):
+    def __init__(self, state: list[list[int]],move=(0,0), empty_cell: tuple = (0, 0), fun_value=float("inf"), g_value=0, parent=None, repeated=False):
         self.state = state
         self.blank_position = empty_cell
 
         self.g_value = g_value
         self.parent = parent
         self.functional_value = fun_value
-
+        self.move = move
         self.repeated = repeated
 
         self.neighbours = []
+        
+        #for graphviz
+        self.node_representation = None
 
+    def node_name(self, generator = None)->str:
+        if not self.node_representation and generator: 
+            self.node_representation = f"node{next(generator)}"
+        return self.node_representation
+
+    def edge(self)->str:
+        return f"{self.move[0]},{self.move[1]}"
+
+    def state_representation(self)->str:
+            return graphviz.nohtml("{{"
+                                   "{{{0}|<f1>{1}|{2}}}|"
+                                   "{{{3}|{4}|{5}}}|"
+                                   "{{{6}|<f2>{7}|{8}}}"
+                                   "}}".format(*[x for y in self.state for x in y]))
+    
     def display(self, depth=20):
         for substate in self.state:
             print(substate)
@@ -88,7 +107,7 @@ class StateMatrix:
         #     debug_count += 1
 
         g_value = self.g_value + 1
-        return StateMatrix(new_state, empty_cell=(row, column), parent=self, g_value=g_value)
+        return StateMatrix(new_state, empty_cell=(row, column), parent=self, g_value=g_value, move=move)
 
     def get_neighbours(self):
         if len(self.neighbours) == 0:
@@ -176,7 +195,50 @@ def a_star_algorithm()->StateMatrix:
 
     return None
 
+
+class Generator:
+    def __init__(self, value = 0):
+        self.value = value
+
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        self.value += 1
+        return self.value
+
+def initTree(state: StateMatrix, graph, generator):
+    COLORS = ("green", "red", "blue")
+    index = 0
+    if state.repeated:
+        index = 2
+    graph.node(state.node_name(generator), state.state_representation(), color=COLORS[index])
+    for child in state.neighbours:
+        initTree(child, graph, generator)
+
+def drawTree(state: StateMatrix, graph):
+    if len(state.neighbours) > 0:
+        for child in state.neighbours:
+            graph.edge(f"{state.node_name()}:f2", f"{child.node_name()}:f1", label = child.edge(), len="1.00")
+            drawTree(child, graph)
+
+def state_space_tree(start_state: StateMatrix):
+    generator = Generator()
+    g = graphviz.Digraph('g', filename='btree.dot',
+                     node_attr={'shape': 'record', 'height': '.4'})
+    initTree(start_state, g, iter(generator))
+    drawTree(start_state, g)
+    g.save()
+
 if __name__ == '__main__':
     goal = a_star_algorithm()
     if goal:
         goal.display(depth = 20)
+
+        parent = goal
+        while True:
+            if not parent.parent:
+                break
+            parent = parent.parent
+
+        state_space_tree(parent)
