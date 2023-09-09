@@ -1,6 +1,7 @@
 # The implementation of 8 puzzle game by A star algorithm.
 import heapq as hq
 import graphviz
+#LDUR 
 
 # debug_count = 0
 class StateMatrix:
@@ -25,7 +26,7 @@ class StateMatrix:
         return self.node_representation
 
     def edge(self)->str:
-        return f"{self.move[0]},{self.move[1]}"
+        return f"f={self.functional_value},g={self.g_value},h={self.functional_value - self.g_value}"
 
     def state_representation(self)->str:
             return graphviz.nohtml("{{"
@@ -146,9 +147,9 @@ initial = [[2, 8, 3],
            [1, 6, 4],
            [7, 0, 5]]
 
-final = [[2, 0, 8],
-         [1, 6, 3],
-         [7, 5, 4]]
+final = [[1, 2, 3],
+         [8, 0, 4],
+         [7, 6, 5]]
 
 
 def a_star_algorithm()->StateMatrix:
